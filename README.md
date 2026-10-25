@@ -69,6 +69,7 @@ social-media-dashboard/
 ├── social_media_usage.csv
 └── README.md
 
+```
 ## Author
 
 **Spurthi Raj**
