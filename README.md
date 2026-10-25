@@ -8,7 +8,7 @@ A full-stack exploratory data analysis (EDA) application built with **Streamlit*
 ![Visualization](https://img.shields.io/badge/Visualization-Plotly-black.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-**Live Deployment:** [social-media-dashboard-analyser.streamlit.app](https://social-media-dashboard-analyser.streamlit.app)
+**Live Deployment:** [pulsemetrics-social-media-analyser.streamlit.app]((https://pulsemetrics-social-media-analyser.streamlit.app/))
 
 ---
 
