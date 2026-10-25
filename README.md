@@ -2,13 +2,13 @@
 
 A full-stack exploratory data analysis (EDA) application built with **Streamlit** and **Plotly**. Designed for real-time social performance attribution, cross-channel engagement tracking, and integrated conversational data queries.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://social-media-dashboard-analyser.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://pulsemetrics-social-media-analyser.streamlit.app/)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
 ![Framework](https://img.shields.io/badge/Framework-Streamlit-red.svg)
 ![Visualization](https://img.shields.io/badge/Visualization-Plotly-black.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-**Live Deployment:** [social-media-dashboard-analyser.streamlit.app]([(https://pulsemetrics-social-media-analyser.streamlit.app/)](https://pulsemetrics-social-media-analyser.streamlit.app/))
+**Live Deployment:** [pulsemetrics-social-media-analyser.streamlit.app](https://pulsemetrics-social-media-analyser.streamlit.app/)
 
 ---
 
