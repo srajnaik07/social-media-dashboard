@@ -6,61 +6,76 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 # ----------------------------------------------------
-# 1. PAGE CONFIGURATION & THEME STYLING
+# 1. PAGE CONFIGURATION & ENTERPRISE STYLING
 # ----------------------------------------------------
 st.set_page_config(
-    page_title="PulseMetrics | Social Media Intelligence",
-    page_icon="📊",
+    page_title="PulseMetrics | Social Media Analytics",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern glassmorphism & card layouts
+# Load FontAwesome 6 via CDN and inject modern clean typography
 st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+    /* Global Font & Header Polishing */
+    h1, h2, h3, h4 {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+    
+    /* Professional Section Badges with External Icons */
+    .icon-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .icon-heading i {
+        color: #6366f1;
+    }
+
     /* Metric Cards */
     .metric-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        backdrop-filter: blur(10px);
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     }
     .metric-title {
-        font-size: 0.85rem;
-        color: #94a3b8;
-        margin-bottom: 6px;
+        font-size: 0.8rem;
+        color: #9ca3af;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        margin-bottom: 6px;
     }
     .metric-value {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: #f9fafb;
     }
     .metric-delta {
         font-size: 0.8rem;
         font-weight: 500;
         margin-top: 4px;
+        color: #10b981;
     }
-    .delta-positive { color: #10b981; }
-    .delta-negative { color: #ef4444; }
 
-    /* Custom Badges */
-    .badge {
-        padding: 4px 10px;
-        border-radius: 9999px;
-        font-size: 0.75rem;
+    /* Clean Chat Message Styling */
+    .chat-role-indicator {
         font-weight: 600;
-        display: inline-block;
+        font-size: 0.85rem;
+        color: #6366f1;
+        margin-bottom: 4px;
     }
-    .badge-primary { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 2. DATA GENERATION / CSV UPLOADER
+# 2. DATA ENGINE
 # ----------------------------------------------------
 @st.cache_data
 def get_sample_data():
@@ -76,7 +91,6 @@ def get_sample_data():
         platform = np.random.choice(platforms, p=[0.35, 0.25, 0.20, 0.10, 0.10])
         post_type = np.random.choice(post_types)
         
-        # Base numbers scaled realistically by platform
         scale = 1.8 if platform in ['Instagram', 'YouTube'] else 1.0
         impressions = int(np.random.exponential(scale=3500 * scale) + 500)
         reach = int(impressions * np.random.uniform(0.70, 0.92))
@@ -91,7 +105,7 @@ def get_sample_data():
         data.append({
             'Post_ID': f"PST-{1000 + i}",
             'Date': date,
-            'Platform': platform,
+            'Filter': platform,
             'Post_Type': post_type,
             'Impressions': impressions,
             'Reach': reach,
@@ -106,63 +120,75 @@ def get_sample_data():
     return df
 
 # ----------------------------------------------------
-# 3. SIDEBAR CONTROLS & FILTERS
+# 3. SIDEBAR CONTROLS
 # ----------------------------------------------------
 with st.sidebar:
-    st.title("⚡ Control Center")
+    st.markdown("""
+        <div class="icon-heading" style="font-size: 1.25rem;">
+            <i class="fa-solid fa-sliders"></i> Control Center
+        </div>
+    """, unsafe_allow_html=True)
     
-    # Dataset source selection
-    data_source = st.radio("Data Source", ["Use Demo Analytics Data", "Upload Custom CSV"], label_visibility="collapsed")
+    data_source = st.radio("Dataset Mode", ["Enterprise Sample", "Upload External CSV"], label_visibility="collapsed")
     
     df_raw = None
-    if data_source == "Upload Custom CSV":
-        uploaded_file = st.file_uploader("Upload Social Analytics CSV", type=["csv"])
+    if data_source == "Upload External CSV":
+        uploaded_file = st.file_uploader("Ingest CSV Dataset", type=["csv"])
         if uploaded_file is not None:
             try:
                 df_raw = pd.read_csv(uploaded_file)
                 if 'Date' in df_raw.columns:
                     df_raw['Date'] = pd.to_datetime(df_raw['Date'])
-                st.success("File uploaded successfully!")
+                st.success("File verified and processed.")
             except Exception as e:
-                st.error(f"Error loading file: {e}")
+                st.error(f"Ingestion error: {e}")
                 df_raw = get_sample_data()
         else:
-            st.info("Awaiting file upload. Using sample dataset.")
             df_raw = get_sample_data()
     else:
         df_raw = get_sample_data()
 
     st.markdown("---")
-    st.subheader("🔍 Filters")
+    st.markdown("""
+        <div class="icon-heading" style="font-size: 1rem;">
+            <i class="fa-solid fa-filter"></i> Parameters
+        </div>
+    """, unsafe_allow_html=True)
     
-    # Platform multi-select filter
-    available_platforms = list(df_raw['Platform'].unique()) if 'Platform' in df_raw.columns else []
+    available_platforms = list(df_raw['Filter'].unique()) if 'Filter' in df_raw.columns else []
     selected_platforms = st.multiselect(
-        "Filter by Platform",
+        "Platforms",
         options=available_platforms,
         default=available_platforms
     )
     
-    # Post type multi-select filter
     available_types = list(df_raw['Post_Type'].unique()) if 'Post_Type' in df_raw.columns else []
     selected_types = st.multiselect(
-        "Filter by Post Type",
+        "Content Formats",
         options=available_types,
         default=available_types
     )
 
-# Filter Dataframe safely
+# Filter Dataset safely
 df = df_raw.copy()
 if selected_platforms:
-    df = df[df['Platform'].isin(selected_platforms)]
+    df = df[df['Filter'].isin(selected_platforms)]
 if selected_types and 'Post_Type' in df.columns:
     df = df[df['Post_Type'].isin(selected_types)]
 
 # ----------------------------------------------------
-# 4. HEADER & KPI CARDS
+# 4. DASHBOARD HEADER & KPI TILES
 # ----------------------------------------------------
-st.title("📊 Social Media Performance Dashboard")
-st.caption("Real-time exploratory data analysis, cross-platform performance tracking, and automated insights.")
+st.markdown("""
+    <div style="margin-bottom: 20px;">
+        <h1 style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+            <i class="fa-solid fa-chart-line" style="color: #6366f1;"></i> Social Media Performance Dashboard
+        </h1>
+        <p style="color: #9ca3af; font-size: 0.95rem; margin: 0;">
+            Real-time performance analytics, cross-platform attribution, and exploratory data intelligence.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -171,35 +197,40 @@ avg_eng_rate = df['Engagement_Rate'].mean() if 'Engagement_Rate' in df.columns e
 total_interactions = (df['Likes'].sum() + df['Comments'].sum() + df['Shares'].sum()) if 'Likes' in df.columns else 0
 total_posts = len(df)
 
-col1.metric("Total Impressions", f"{total_impressions:,.0f}", "+14.2% vs last period")
+col1.metric("Total Impressions", f"{total_impressions:,.0f}", "+14.2% MoM")
 col2.metric("Avg. Engagement Rate", f"{avg_eng_rate:.2f}%", "+0.8% benchmark")
-col3.metric("Total Interactions", f"{total_interactions:,.0f}", "+8.5%")
-col4.metric("Analyzed Posts", f"{total_posts}", f"{len(selected_platforms)} Platforms")
+col3.metric("Total Interactions", f"{total_interactions:,.0f}", "+8.5% MoM")
+col4.metric("Indexed Posts", f"{total_posts:,}", f"{len(selected_platforms)} Active Channels")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 5. MAIN NAVIGATION TABS
+# 5. WORKSPACE TABS (CLEAN, NO EMOJIS)
 # ----------------------------------------------------
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📈 Performance Trends", 
-    "📱 Platform Deep-Dive", 
-    "🤖 Smart AI Assistant", 
-    "📁 Raw Dataset"
+    "Performance Trends", 
+    "Platform Attribution", 
+    "AI Analytics Assistant", 
+    "Dataset Inspector"
 ])
 
 # ---- TAB 1: PERFORMANCE TRENDS ----
 with tab1:
-    st.subheader("Cross-Channel Impressions & Growth Trends")
+    st.markdown("""
+        <div class="icon-heading">
+            <i class="fa-solid fa-arrow-trend-up"></i> Cross-Channel Impressions & Growth Trends
+        </div>
+    """, unsafe_allow_html=True)
+    
     if 'Date' in df.columns and not df.empty:
-        trend_df = df.groupby(['Date', 'Platform'])['Impressions'].sum().reset_index()
+        trend_df = df.groupby(['Date', 'Filter'])['Impressions'].sum().reset_index()
         fig_trend = px.line(
             trend_df, 
             x='Date', 
             y='Impressions', 
-            color='Platform',
+            color='Filter',
             template="plotly_dark",
-            title="Daily Impressions by Platform",
+            title="Daily Impression Trajectory by Platform",
             markers=True
         )
         fig_trend.update_layout(hovermode="x unified", height=400, margin=dict(l=20, r=20, t=40, b=20))
@@ -207,7 +238,11 @@ with tab1:
 
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("Engagement Rate by Content Format")
+        st.markdown("""
+            <div class="icon-heading">
+                <i class="fa-solid fa-chart-column"></i> Engagement Rate by Format
+            </div>
+        """, unsafe_allow_html=True)
         if 'Post_Type' in df.columns and 'Engagement_Rate' in df.columns:
             format_df = df.groupby('Post_Type')['Engagement_Rate'].mean().reset_index().sort_values(by='Engagement_Rate', ascending=False)
             fig_format = px.bar(
@@ -215,15 +250,19 @@ with tab1:
                 x='Post_Type', 
                 y='Engagement_Rate', 
                 color='Engagement_Rate',
-                color_continuous_scale="Viridis",
+                color_continuous_scale="Blues",
                 template="plotly_dark",
-                labels={'Engagement_Rate': 'Avg Engagement (%)'}
+                labels={'Engagement_Rate': 'Avg Engagement (%)', 'Post_Type': 'Content Format'}
             )
             fig_format.update_layout(height=350)
             st.plotly_chart(fig_format, use_container_width=True)
 
     with c2:
-        st.subheader("Interactions Breakdown (Likes vs Shares vs Comments)")
+        st.markdown("""
+            <div class="icon-heading">
+                <i class="fa-solid fa-chart-pie"></i> Interaction Share (Likes, Comments, Shares)
+            </div>
+        """, unsafe_allow_html=True)
         if all(k in df.columns for k in ['Likes', 'Comments', 'Shares']):
             breakdown_data = pd.DataFrame({
                 'Interaction': ['Likes', 'Comments', 'Shares'],
@@ -233,19 +272,23 @@ with tab1:
                 breakdown_data, 
                 values='Count', 
                 names='Interaction', 
-                hole=0.4,
-                color_discrete_sequence=px.colors.sequential.Teal,
+                hole=0.45,
+                color_discrete_sequence=px.colors.qualitative.Prism,
                 template="plotly_dark"
             )
             fig_pie.update_layout(height=350)
             st.plotly_chart(fig_pie, use_container_width=True)
 
-# ---- TAB 2: PLATFORM BREAKDOWN ----
+# ---- TAB 2: PLATFORM ATTRIBUTION ----
 with tab2:
-    st.subheader("Platform Efficiency & ROI Comparison")
+    st.markdown("""
+        <div class="icon-heading">
+            <i class="fa-solid fa-layer-group"></i> Platform Efficiency & Attribution
+        </div>
+    """, unsafe_allow_html=True)
     
-    if 'Platform' in df.columns:
-        p_summary = df.groupby('Platform').agg(
+    if 'Filter' in df.columns:
+        p_summary = df.groupby('Filter').agg(
             Posts=('Post_ID', 'count'),
             Total_Impressions=('Impressions', 'sum'),
             Avg_Reach=('Reach', 'mean'),
@@ -259,7 +302,7 @@ with tab2:
                 df,
                 x="Impressions",
                 y="Engagement_Rate",
-                color="Platform",
+                color="Filter",
                 size="Likes",
                 hover_data=['Post_Type'],
                 template="plotly_dark",
@@ -271,131 +314,138 @@ with tab2:
         with col_right:
             fig_bar_reach = px.bar(
                 p_summary,
-                x="Platform",
+                x="Filter",
                 y="Total_Impressions",
-                color="Platform",
+                color="Filter",
                 template="plotly_dark",
-                title="Volume Reach by Channel"
+                title="Aggregate Volume by Filter"
             )
             fig_bar_reach.update_layout(height=420)
             st.plotly_chart(fig_bar_reach, use_container_width=True)
 
-# ---- TAB 3: SMART AI ASSISTANT (FIXED CHATBOT) ----
+# ---- TAB 3: AI ANALYTICS ASSISTANT (CONVERSATIONAL DATA ENGINE) ----
 with tab3:
-    st.subheader("💬 AI Social Data Assistant")
-    st.caption("Ask questions about your data! This assistant queries your active dataset in real-time.")
+    st.markdown("""
+        <div class="icon-heading" style="font-size: 1.15rem;">
+            <i class="fa-solid fa-brain"></i> AI Analytics Assistant
+        </div>
+        <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 16px;">
+            Deterministic query parsing engine connected to the active filtered dataset.
+        </p>
+    """, unsafe_allow_html=True)
 
-    # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "Hello! I'm your social analytics assistant. You can ask me things like:\n- *'What is our highest performing post?'*\n- *'Which platform has the best engagement?'*\n- *'Summarize our performance metrics'*\n- *'Give me content recommendations'*\n- *'Compare video vs image performance'*"}
+            {
+                "role": "assistant", 
+                "content": "Data engine ready. Sample operational queries:\n- *What is our top performing post?*\n- *Compare platform efficiency*\n- *Provide an executive summary*\n- *What content format drives highest engagement?*"
+            }
         ]
 
-    # Render previous messages
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # Rule & dynamic analytical response logic (Never fails with "I don't understand")
-    def analyze_query(query: str, current_df: pd.DataFrame) -> str:
+    def parse_analytics_query(query: str, current_df: pd.DataFrame) -> str:
         q = query.lower().strip()
         
         if current_df.empty:
-            return "Your current dataset filter is empty. Please select at least one platform and post type in the sidebar!"
+            return "Active dataset selection is empty. Adjust platform and format filters in the sidebar."
 
-        # Highest / Best Post
-        if any(word in q for word in ["highest", "best", "top post", "most popular", "viral"]):
+        # Top Post Intent
+        if any(w in q for w in ["highest", "best", "top post", "most popular", "viral", "leading"]):
             best_post = current_df.loc[current_df['Engagement_Rate'].idxmax()]
             return (
-                f"🏆 **Top Performing Post:**\n\n"
+                f"**Top Performing Asset Identified:**\n\n"
                 f"- **Post ID:** `{best_post.get('Post_ID', 'N/A')}`\n"
-                f"- **Platform:** {best_post.get('Platform', 'N/A')}\n"
+                f"- **Channel:** {best_post.get('Filter', 'N/A')}\n"
                 f"- **Format:** {best_post.get('Post_Type', 'N/A')}\n"
                 f"- **Engagement Rate:** `{best_post.get('Engagement_Rate', 0)}%`\n"
-                f"- **Total Impressions:** `{best_post.get('Impressions', 0):,}`\n"
-                f"- **Likes / Shares:** {best_post.get('Likes', 0):,} likes, {best_post.get('Shares', 0):,} shares."
+                f"- **Total Reach:** `{best_post.get('Reach', 0):,}`\n"
+                f"- **Interactions:** {best_post.get('Likes', 0):,} likes, {best_post.get('Shares', 0):,} shares."
             )
 
-        # Platform comparison
-        elif any(word in q for word in ["platform", "channel", "best channel", "where"]):
-            best_p = current_df.groupby('Platform')['Engagement_Rate'].mean().idxmax()
-            best_p_rate = current_df.groupby('Platform')['Engagement_Rate'].mean().max()
-            vol_p = current_df.groupby('Platform')['Impressions'].sum().idxmax()
+        # Platform Comparison Intent
+        elif any(w in q for w in ["platform", "channel", "network", "compare"]):
+            best_p = current_df.groupby('Filter')['Engagement_Rate'].mean().idxmax()
+            best_p_rate = current_df.groupby('Filter')['Engagement_Rate'].mean().max()
+            vol_p = current_df.groupby('Filter')['Impressions'].sum().idxmax()
+            vol_num = current_df.groupby('Filter')['Impressions'].sum().max()
             return (
-                f"📱 **Platform Insights:**\n\n"
-                f"- Highest engagement efficiency: **{best_p}** with an average **{best_p_rate:.2f}%** engagement rate.\n"
-                f"- Largest audience volume: **{vol_p}** delivering **{current_df.groupby('Platform')['Impressions'].sum().max():,}** impressions.\n\n"
-                f"*Tip: If you're looking for conversions, prioritize {best_p}; for brand awareness, focus on {vol_p}.*"
+                f"**Cross-Channel Benchmark Analysis:**\n\n"
+                f"- **Highest Conversion Efficiency:** **{best_p}** (avg. engagement rate: **{best_p_rate:.2f}%**).\n"
+                f"- **Highest Reach Volume:** **{vol_p}** (aggregate impressions: **{vol_num:,}**).\n\n"
+                f"*Actionable conclusion: Allocate budget towards {vol_p} for brand awareness, and utilize {best_p} for audience retention.*"
             )
 
-        # Summary / Overview
-        elif any(word in q for word in ["summary", "overview", "overall", "stats", "kpi"]):
+        # Executive Summary Intent
+        elif any(w in q for w in ["summary", "overview", "executive", "kpi", "stats", "audit"]):
             return (
-                f"📊 **Executive Summary:**\n\n"
-                f"- **Total Posts Analyzed:** {len(current_df):,}\n"
-                f"- **Aggregate Impressions:** {current_df['Impressions'].sum():,}\n"
-                f"- **Average Engagement:** {current_df['Engagement_Rate'].mean():.2f}%\n"
-                f"- **Total Likes:** {current_df['Likes'].sum():,}\n"
-                f"- **Total Comments:** {current_df['Comments'].sum():,}\n"
-                f"- **Top Format:** {current_df.groupby('Post_Type')['Engagement_Rate'].mean().idxmax()}"
+                f"**Executive Performance Audit:**\n\n"
+                f"- **Indexed Assets:** {len(current_df):,}\n"
+                f"- **Gross Impressions:** {current_df['Impressions'].sum():,}\n"
+                f"- **Mean Engagement Rate:** {current_df['Engagement_Rate'].mean():.2f}%\n"
+                f"- **Total Interactions:** {(current_df['Likes'].sum() + current_df['Comments'].sum() + current_df['Shares'].sum()):,}\n"
+                f"- **Leading Asset Type:** {current_df.groupby('Post_Type')['Engagement_Rate'].mean().idxmax()}"
             )
 
-        # Recommendations / Strategy
-        elif any(word in q for word in ["recommend", "strategy", "improve", "tips", "advice"]):
-            best_format = current_df.groupby('Post_Type')['Engagement_Rate'].mean().idxmax()
+        # Strategic Recommendations Intent
+        elif any(w in q for w in ["recommend", "strategy", "improve", "tips", "optimize"]):
+            top_format = current_df.groupby('Post_Type')['Engagement_Rate'].mean().idxmax()
+            top_channel = current_df.groupby('Filter')['Engagement_Rate'].mean().idxmax()
             return (
-                f"💡 **Strategic Content Recommendations:**\n\n"
-                f"1. **Double down on `{best_format}`:** This format currently achieves the highest engagement on your channels.\n"
-                f"2. **Optimize Posting Schedule:** Maintain a 3-4x weekly cadence on your highest-retention platform.\n"
-                f"3. **Boost Conversion Ratios:** Comments yield a high conversion intent. Encourage community replies with open questions in captions."
+                f"**Strategic Distribution Recommendations:**\n\n"
+                f"1. **Content Priority:** Increase production volume for **`{top_format}`**, which yields the highest engagement density across data points.\n"
+                f"2. **Primary Channel Distribution:** Prioritize organic distribution on **{top_channel}** to maximize interaction-per-impression return.\n"
+                f"3. **Audience Retention:** Focus call-to-actions on direct comments to increase algorithmic amplification."
             )
 
-        # Average / Rates
-        elif any(word in q for word in ["average", "avg", "mean", "rate"]):
+        # Averages & Statistics
+        elif any(w in q for w in ["average", "avg", "mean", "metric"]):
             return (
-                f"📈 **Key Averages:**\n\n"
-                f"- Average Impressions per Post: **{current_df['Impressions'].mean():,.0f}**\n"
+                f"**Dataset Statistical Means:**\n\n"
+                f"- Average Impressions / Post: **{current_df['Impressions'].mean():,.0f}**\n"
                 f"- Average Engagement Rate: **{current_df['Engagement_Rate'].mean():.2f}%**\n"
-                f"- Average Likes per Post: **{current_df['Likes'].mean():,.0f}**\n"
-                f"- Average Shares per Post: **{current_df['Shares'].mean():,.0f}**"
+                f"- Average Likes / Post: **{current_df['Likes'].mean():,.0f}**\n"
+                f"- Average Shares / Post: **{current_df['Shares'].mean():,.0f}**"
             )
 
-        # Fallback intelligent breakdown (Never says "I don't understand")
+        # Context-Aware Fallback
         else:
             return (
-                f"Here is a quick snapshot based on your question about **'{query}'**:\n\n"
-                f"- Analyzed across **{len(current_df)} posts** currently filtered.\n"
-                f"- Dominant platform: **{current_df['Platform'].value_counts().index[0]}**.\n"
-                f"- Current average engagement: **{current_df['Engagement_Rate'].mean():.2f}%**.\n\n"
-                f"Try asking:\n"
-                f"- *'What is our top post?'*\n"
-                f"- *'Compare our platforms'*\n"
-                f"- *'Give me content recommendations'*"
+                f"**Data Slice Context (`{query}`):**\n\n"
+                f"- Scope: **{len(current_df)} filtered posts**\n"
+                f"- Leading channel by post count: **{current_df['Filter'].value_counts().index[0]}**\n"
+                f"- Segment engagement rate: **{current_df['Engagement_Rate'].mean():.2f}%**\n\n"
+                f"Suggested queries:\n"
+                f"- *'What is our top performing post?'*\n"
+                f"- *'Compare filter efficiency'*\n"
+                f"- *'Provide strategic recommendations'*"
             )
 
-    # Chat input box
-    if user_prompt := st.chat_input("Ask a question about your social metrics..."):
-        # Add user query to state
+    if user_prompt := st.chat_input("Enter analytics query..."):
         st.session_state.messages.append({"role": "user", "content": user_prompt})
         with st.chat_message("user"):
             st.markdown(user_prompt)
 
-        # Generate response
-        response = analyze_query(user_prompt, df)
-        
-        # Add assistant response to state
+        response = parse_analytics_query(user_prompt, df)
         st.session_state.messages.append({"role": "assistant", "content": response})
         with st.chat_message("assistant"):
             st.markdown(response)
 
-# ---- TAB 4: RAW DATASET & EXPORT ----
+# ---- TAB 4: DATASET INSPECTOR ----
 with tab4:
-    st.subheader("Data Inspector & Export")
+    st.markdown("""
+        <div class="icon-heading">
+            <i class="fa-solid fa-table"></i> Tabular Inspection & Data Export
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.dataframe(df, use_container_width=True)
     
     csv_data = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📥 Download Filtered Data as CSV",
+        label="Export Filtered Data (CSV)",
         data=csv_data,
         file_name="social_media_analytics_export.csv",
         mime="text/csv",
